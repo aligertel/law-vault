@@ -57,8 +57,11 @@ def format_message(block):
         message += " ".join(headers) + "\n\n"
 
     message += f"📖 <b>{question}</b>\n"
-    message += "━━━━━━━━━━━━━━\n\n"
-    message += "\n".join(options)
+    message += "━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+
+    separator = "\n⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃\n"
+    message += separator.join(options)
+
     message += f"\n\n💡 <b>پاسخ:</b>\n<tg-spoiler>{answer}</tg-spoiler>"
 
     return message
