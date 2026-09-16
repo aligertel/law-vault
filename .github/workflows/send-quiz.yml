@@ -1,0 +1,48 @@
+name: Send Quiz to Telegram
+
+on:
+  workflow_dispatch:
+    inputs:
+      question:
+        description: "متن سؤال"
+        required: true
+        type: string
+      option_a:
+        description: "گزینه الف"
+        required: true
+        type: string
+      option_b:
+        description: "گزینه ب"
+        required: true
+        type: string
+      option_c:
+        description: "گزینه ج"
+        required: true
+        type: string
+      option_d:
+        description: "گزینه د"
+        required: false
+        type: string
+      correct_index:
+        description: "شماره گزینه صحیح (0=الف, 1=ب, 2=ج, 3=د)"
+        required: true
+        type: string
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          QUESTION: ${{ inputs.question }}
+          OPTION_A: ${{ inputs.option_a }}
+          OPTION_B: ${{ inputs.option_b }}
+          OPTION_C: ${{ inputs.option_c }}
+          OPTION_D: ${{ inputs.option_d }}
+          CORRECT_INDEX: ${{ inputs.correct_index }}
+        run: python send_quiz_poll.py
