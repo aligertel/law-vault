@@ -32,7 +32,11 @@ def load_questions(filepath):
     with open(filepath, encoding="utf-8") as f:
         content = f.read()
     parts = re.split(r'\n(?=سوال\s)', content)
-    blocks = [p.strip() for p in parts if p.strip()]
+    blocks = []
+    for p in parts:
+        p = p.strip()
+        if p and "سوال" in p:
+            blocks.append(p)
     return blocks
 
 def format_message(block):
