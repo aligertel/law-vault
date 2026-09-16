@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import requests
+import re
 
 BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "@hajimirzamahmoud")
@@ -42,13 +43,19 @@ def format_message(block):
     lines = block.split("\n")
     headers = []
     question = ""
+    question_number = ""
     options = []
     answer = ""
     for line in lines:
         if line.startswith("[") and line.endswith("]"):
             headers.append("#" + line.strip("[]").strip())
         elif line.startswith("سوال"):
-            question = line.replace("سوال", "🔒", 1)
+            match = re.match(r'سوال\s+([\u06F0-\u06F9\d]+)\s*:\s*(.*)', line)
+            if match:
+                question_number = match.group(1)
+                question = match.group(2).strip()
+            else:
+                question = line.replace("سوال", "", 1).strip()
         elif line.startswith("پاسخ:"):
             answer = line.replace("پاسخ:", "").strip()
         elif any(line.startswith(ch) for ch in ["الف)", "ب)", "ج)", "د)"]):
@@ -58,13 +65,13 @@ def format_message(block):
     if headers:
         message += " ".join(headers) + "\n\n"
 
-    message += f"{RLM}📖 <b>{question}</b>\n"
+    message += f"{RLM}🔒 <b>{question_number}</b>: {question}\n"
     message += f"{RLM}━━━━━━━━━━━━━━\n\n"
 
     separator = f"\n{RLM}⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃\n"
     message += separator.join([RLM + opt for opt in options])
 
-    message += f"\n\n{RLM}🔑 <b>پاسخ:</b>\n<tg-spoiler>{RLM}{answer}</tg-spoiler>"
+    message += f"\n\n{RLM}🔑 <b>{question_number}</b>: <tg-spoiler>{RLM}{answer}</tg-spoiler>"
 
     return message
 
