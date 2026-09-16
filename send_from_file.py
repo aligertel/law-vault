@@ -1,6 +1,5 @@
 import os
 import sys
-import re
 import time
 import requests
 
@@ -52,12 +51,16 @@ def format_message(block):
             answer = line.replace("پاسخ:", "").strip()
         elif any(line.startswith(ch) for ch in ["الف)", "ب)", "ج)", "د)"]):
             options.append(line)
+
     message = ""
     if headers:
         message += " ".join(headers) + "\n\n"
-    message += f"<b>{question}</b>\n\n"
+
+    message += f"📖 <b>{question}</b>\n"
+    message += "━━━━━━━━━━━━━━\n\n"
     message += "\n".join(options)
-    message += f"\n\n پاسخ: <tg-spoiler>{answer}</tg-spoiler>"
+    message += f"\n\n💡 <b>پاسخ:</b>\n<tg-spoiler>{answer}</tg-spoiler>"
+
     return message
 
 def main():
