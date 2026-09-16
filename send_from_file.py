@@ -7,6 +7,8 @@ BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "@hajimirzamahmoud")
 QUESTIONS_FILE = "questions.txt"
 
+RLM = "\u200F"  # Right-to-Left Mark برای راست‌چین کردن
+
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
 def send_message(text):
@@ -56,13 +58,13 @@ def format_message(block):
     if headers:
         message += " ".join(headers) + "\n\n"
 
-    message += f"📖 <b>{question}</b>\n"
-    message += "━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+    message += f"{RLM}📖 <b>{question}</b>\n"
+    message += f"{RLM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
-    separator = "\n⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃\n"
-    message += separator.join(options)
+    separator = f"\n{RLM}⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃\n"
+    message += separator.join([RLM + opt for opt in options])
 
-    message += f"\n\n💡 <b>پاسخ:</b>\n<tg-spoiler>{answer}</tg-spoiler>"
+    message += f"\n\n{RLM}💡 <b>پاسخ:</b>\n<tg-spoiler>{RLM}{answer}</tg-spoiler>"
 
     return message
 
