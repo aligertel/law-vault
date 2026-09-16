@@ -1,5 +1,4 @@
 import os
-import sys
 import time
 import requests
 import re
@@ -9,7 +8,6 @@ CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "@hajimirzamahmoud")
 QUESTIONS_FILE = "questions.txt"
 
 RLM = "\u200F"
-
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
 def send_message(text, retries=3):
@@ -32,21 +30,9 @@ def send_message(text, retries=3):
 
 def load_questions(filepath):
     with open(filepath, encoding="utf-8") as f:
-        lines = f.readlines()
-
-    blocks = []
-    current = []
-    for line in lines:
-        stripped = line.strip()
-        if stripped.startswith("سوال") and any(l.startswith("سوال") for l in current):
-            blocks.append("\n".join(current))
-            current = []
-        current.append(stripped)
-
-    # حتی اگر خط خالی در آخر نباشد، آخرین بلاک را اضافه کن
-    if current and any(l.startswith("سوال") for l in current):
-        blocks.append("\n".join(current))
-
+        content = f.read()
+    parts = re.split(r'\n(?=سوال\s)', content)
+    blocks = [p.strip() for p in parts if p.strip()]
     return blocks
 
 def format_message(block):
