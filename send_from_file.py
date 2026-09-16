@@ -7,7 +7,7 @@ BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "@hajimirzamahmoud")
 QUESTIONS_FILE = "questions.txt"
 
-RLM = "\u200F"  # Right-to-Left Mark برای راست‌چین کردن
+RLM = "\u200F"
 
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
@@ -48,7 +48,7 @@ def format_message(block):
         if line.startswith("[") and line.endswith("]"):
             headers.append("#" + line.strip("[]").strip())
         elif line.startswith("سوال"):
-            question = line
+            question = line.replace("سوال", "🔒", 1)
         elif line.startswith("پاسخ:"):
             answer = line.replace("پاسخ:", "").strip()
         elif any(line.startswith(ch) for ch in ["الف)", "ب)", "ج)", "د)"]):
@@ -59,12 +59,12 @@ def format_message(block):
         message += " ".join(headers) + "\n\n"
 
     message += f"{RLM}📖 <b>{question}</b>\n"
-    message += f"{RLM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+    message += f"{RLM}━━━━━━━━━━━━━━\n\n"
 
     separator = f"\n{RLM}⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃\n"
     message += separator.join([RLM + opt for opt in options])
 
-    message += f"\n\n{RLM}💡 <b>پاسخ:</b>\n<tg-spoiler>{RLM}{answer}</tg-spoiler>"
+    message += f"\n\n{RLM}🔑 <b>پاسخ:</b>\n<tg-spoiler>{RLM}{answer}</tg-spoiler>"
 
     return message
 
