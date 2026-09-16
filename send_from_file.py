@@ -59,9 +59,9 @@ def format_message(block):
         message += " ".join(headers) + "\n\n"
 
     message += f"{RLM}📖 <b>{question}</b>\n"
-    message += f"{RLM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+    message += f"{RLM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
-    separator = f"\n{RLM}⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃\n"
+    separator = f"\n{RLM}⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃\n"
     message += separator.join([RLM + opt for opt in options])
 
     message += f"\n\n{RLM}💡 <b>پاسخ:</b>\n<tg-spoiler>{RLM}{answer}</tg-spoiler>"
