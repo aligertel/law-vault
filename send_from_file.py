@@ -33,6 +33,7 @@ def send_message(text, retries=3):
 def load_questions(filepath):
     with open(filepath, encoding="utf-8") as f:
         lines = f.readlines()
+
     blocks = []
     current = []
     for line in lines:
@@ -41,8 +42,11 @@ def load_questions(filepath):
             blocks.append("\n".join(current))
             current = []
         current.append(stripped)
-    if current:
+
+    # حتی اگر خط خالی در آخر نباشد، آخرین بلاک را اضافه کن
+    if current and any(l.startswith("سوال") for l in current):
         blocks.append("\n".join(current))
+
     return blocks
 
 def format_message(block):
