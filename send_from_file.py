@@ -12,17 +12,23 @@ RLM = "\u200F"
 
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
-def send_message(text):
+def send_message(text, retries=3):
     payload = {"chat_id": CHANNEL_ID, "text": text, "parse_mode": "HTML"}
-    response = requests.post(API_URL, json=payload, timeout=30)
-    if response.status_code == 429:
-        retry = response.json().get("parameters", {}).get("retry_after", 5)
-        time.sleep(retry + 1)
-        return send_message(text)
-    if not response.ok:
-        print(f"خطا: {response.text}")
-        return False
-    return True
+    for attempt in range(retries):
+        try:
+            response = requests.post(API_URL, json=payload, timeout=30)
+            if response.status_code == 429:
+                retry = response.json().get("parameters", {}).get("retry_after", 5)
+                time.sleep(retry + 1)
+                continue
+            if not response.ok:
+                print(f"خطا: {response.text}")
+                return False
+            return True
+        except requests.exceptions.RequestException as e:
+            print(f"تلاش {attempt+1} ناموفق: {e}")
+            time.sleep(5)
+    return False
 
 def load_questions(filepath):
     with open(filepath, encoding="utf-8") as f:
@@ -66,9 +72,9 @@ def format_message(block):
         message += " ".join(headers) + "\n\n"
 
     message += f"{RLM}🔒 <b>{question_number}</b>: {question}\n"
-    message += f"{RLM}━━━━━━━━━━━━━━\n\n"
+    message += f"{RLM}──────────────────\n\n"
 
-    separator = f"\n{RLM}⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃⁃\n"
+    separator = f"\n{RLM}┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
     message += separator.join([RLM + opt for opt in options])
 
     message += f"\n\n{RLM}🔑 <b>{question_number}</b>: <tg-spoiler>{RLM}{answer}</tg-spoiler>"
@@ -84,7 +90,7 @@ def main():
             print(f"سوال {i} ارسال شد ✓")
         else:
             print(f"سوال {i} ناموفق ✗")
-        time.sleep(2)
+        time.sleep(5)
 
 if __name__ == "__main__":
     main()
