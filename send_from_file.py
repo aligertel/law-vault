@@ -39,7 +39,7 @@ def load_questions(filepath):
             blocks.append(p)
     return blocks
 
-def format_message(block):
+def format_message(block, last_headers=None):
     lines = block.split("\n")
     headers = []
     question = ""
@@ -61,6 +61,10 @@ def format_message(block):
         elif any(line.startswith(ch) for ch in ["الف)", "ب)", "ج)", "د)"]):
             options.append(line)
 
+    # اگر این بلاک هدر ندارد، از بلاک قبلی هدر بگیر
+    if not headers and last_headers:
+        headers = last_headers
+
     message = ""
     if headers:
         message += " ".join(headers) + "\n\n"
@@ -73,13 +77,16 @@ def format_message(block):
 
     message += f"\n\n{RLM}🔑 <b>{question_number}</b>: <tg-spoiler>{RLM}{answer}</tg-spoiler>"
 
-    return message
+    return message, headers
 
 def main():
     blocks = load_questions(QUESTIONS_FILE)
     print(f"{len(blocks)} سوال پیدا شد.")
+    last_headers = None
     for i, block in enumerate(blocks, 1):
-        msg = format_message(block)
+        msg, headers = format_message(block, last_headers)
+        if headers:
+            last_headers = headers
         if send_message(msg):
             print(f"سوال {i} ارسال شد ✓")
         else:
