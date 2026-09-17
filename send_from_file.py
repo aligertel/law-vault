@@ -128,9 +128,9 @@ def format_message(question_text, headers):
         subject_headers = [h for h in headers if not DIGIT_RE.search(h)]
         other_headers = [h for h in headers if DIGIT_RE.search(h)]
         if subject_headers:
-            message += " ".join(f"<code>{h}</code>" for h in subject_headers) + "\n"
+            message += " ".join(subject_headers) + "\n"
         if other_headers:
-            message += " ".join(f"<code>{h}</code>" for h in other_headers) + "\n"
+            message += " ".join(other_headers) + "\n"
         message += "\n"
 
     message += f"{RLM}│ <b>سوال {question_number}</b>\n"
@@ -145,7 +145,7 @@ def format_message(question_text, headers):
             option_lines.append(f"{RLM}<code>{label})</code> {body}")
         else:
             option_lines.append(f"{RLM}{highlight_citations(html.escape(opt))}")
-    message += "\n".join(option_lines)
+    message += "\n\n".join(option_lines)
     message += "\n\n"
 
     # فاصله‌ی خالی قبل از متن پاسخ داخل بلاک‌کوت تاشو، تا در حالت بسته
