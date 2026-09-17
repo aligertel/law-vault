@@ -153,7 +153,7 @@ def format_message(question_text, headers):
     if short_match:
         short_answer, rest_answer = short_match.group(1), short_match.group(2).strip()
         # لایه‌ی اول: پاسخ کوتاه به‌شکل اسپویلر (با یک تپ سریع دیده می‌شود)
-        message += f"{RLM}<b>پاسخ کوتاه:</b> <span class=\"tg-spoiler\">{short_answer}</span>\n\n"
+        message += f"{RLM}│ <b>پاسخ کوتاه:</b> <span class=\"tg-spoiler\">{short_answer}</span>\n\n"
         # لایه‌ی دوم: استدلال کامل داخل بلاک‌کوت تاشو
         message += (
             f"{RLM}<blockquote expandable>{fold_padding}{rest_answer}</blockquote>"
@@ -161,7 +161,7 @@ def format_message(question_text, headers):
     else:
         message += (
             f"{RLM}<blockquote expandable>{fold_padding}"
-            f"<b>پاسخ</b>\n\n{answer}</blockquote>"
+            f"│ <b>پاسخ</b>\n\n{answer}</blockquote>"
         )
 
     return message
