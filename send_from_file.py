@@ -10,9 +10,9 @@ QUESTIONS_FILE = "questions.txt"
 RLM = "\u200F"
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
-EXPLANATION_TEXT = "اوه! نزدیک بود. بیا با هم پاسخ رو بخونیم تا این نکته رو برای همیشه یاد بگیری."
+EXPLANATION_TEXT = "بریم پاسخ رو با هم ببینیم."
 
-def ensure_foldable(text, pad_lines=5):
+def ensure_foldable(text, pad_lines=10):
     def pad_match(m):
         inner = m.group(1)
         inner = ("\n" * pad_lines) + inner
@@ -28,11 +28,11 @@ def send_poll(question, options, correct_index):
     url = f"{API_URL}/sendPoll"
     payload = {
         "chat_id": CHANNEL_ID,
-        "question": question,
-        "options": options,
+        "question": question[:300],
+        "options": [opt[:100] for opt in options],
         "type": "quiz",
         "correct_option_id": correct_index,
-        "explanation": EXPLANATION_TEXT,
+        "explanation": EXPLANATION_TEXT[:200],
         "is_anonymous": True,
     }
     response = requests.post(url, json=payload, timeout=30)
@@ -48,7 +48,7 @@ def send_reply(text, reply_to_message_id, retries=3):
         "chat_id": CHANNEL_ID,
         "text": text,
         "parse_mode": "HTML",
-        "reply_parameters": '{"message_id": ' + str(reply_to_message_id) + '}',
+        "reply_parameters": {"message_id": reply_to_message_id},
     }
     for attempt in range(retries):
         try:
@@ -93,7 +93,8 @@ def format_poll_data(block):
         elif line.startswith("پاسخ:"):
             answer = line.replace("پاسخ:", "").strip()
         elif any(line.startswith(ch) for ch in ["الف)", "ب)", "ج)", "د)"]):
-            options.append(line)
+            opt_text = re.sub(r'^(الف|ب|ج|د)\)\s*', '', line)
+            options.append(opt_text)
 
     return headers, question_number, question, options, answer
 
@@ -101,7 +102,7 @@ def find_correct_index(answer):
     match = re.search(r'گزینه\s+([۱-۴1-4])', answer)
     if match:
         num = match.group(1)
-        mapping = {"۱": 0, "۱": 0, "۲": 1, "۲": 1, "۳": 2, "۳": 2, "۴": 3, "۴": 3,
+        mapping = {"۱": 0, "۲": 1, "۳": 2, "۴": 3,
                    "1": 0, "2": 1, "3": 2, "4": 3}
         return mapping.get(num, 0)
     return 0
@@ -117,11 +118,11 @@ def main():
         if headers:
             last_headers = headers
 
-        # هشتگ‌ها را به صورت متن به سوال اضافه کن
-        hashtag_text = " ".join(headers) if headers else ""
-        poll_question = f"{hashtag_text}\n\n{q_num}: {question}"
-        if len(poll_question) > 300:
-            poll_question = poll_question[:297] + "..."
+        poll_question = f"{q_num}: {question}"
+
+        if len(options) != 4:
+            print(f"سوال {i}: تعداد گزینه‌ها {len(options)} است — رد شد.")
+            continue
 
         correct_index = find_correct_index(answer)
 
@@ -129,7 +130,10 @@ def main():
         if poll_msg_id:
             print(f"سوال {i}: پُل ارسال شد ✓")
             time.sleep(3)
-            reply_text = f"{q_num}: {answer}"
+
+            hashtag_text = " ".join(headers) if headers else ""
+            reply_text = f"{hashtag_text}\n\n{q_num}: {answer}"
+
             if send_reply(reply_text, poll_msg_id):
                 print(f"سوال {i}: پاسخ تاشو ارسال شد ✓")
             else:
