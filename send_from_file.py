@@ -68,9 +68,9 @@ def format_message(block, last_headers=None):
     if headers:
         message += " ".join(headers) + "\n\n"
 
-    message += f"{RLM}🔒 <b>{question_number}</b>: {question}\n\n"
+    message += f"{RLM}<b>{question_number}</b>: {question}\n\n"
     message += "\n\n".join([RLM + opt for opt in options])
-    message += f"\n\n{RLM}🔑 <b>{question_number}</b>: <tg-spoiler>{RLM}{answer}</tg-spoiler>"
+    message += f"\n\n{RLM}<blockquote expandable><b>{question_number}</b>: {answer}</blockquote>"
 
     return message, headers
 
