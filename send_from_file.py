@@ -99,7 +99,7 @@ def format_message(block, last_headers=None):
 
     message += f"{RLM}❓ <code>سوال {question_number}</code>\n"
     message += f"{RLM}<b>{question}</b>\n\n"
-    message += "\n".join([RLM + opt for opt in options_escaped])
+    message += "\n\n".join([f"{RLM}▫️ {opt}" for opt in options_escaped])
     message += f"\n\n{RLM}{DIVIDER}\n"
     message += f"{RLM}<blockquote expandable>✅ <b>پاسخ</b>\n\n{answer}</blockquote>"
 
