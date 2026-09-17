@@ -64,13 +64,17 @@ def format_message(block, last_headers=None):
     if not headers and last_headers:
         headers = last_headers
 
+    # ترفند: اگر پاسخ کوتاه است، چند خط خالی اضافه کن تا تاشو شود
+    if len(answer) < 200:
+        answer = "\n\n\n" + answer
+
     message = ""
     if headers:
         message += " ".join(headers) + "\n\n"
 
     message += f"{RLM}<b>{question_number}</b>: {question}\n\n"
     message += "\n\n".join([RLM + opt for opt in options])
-    message += f"\n\n{RLM}<blockquote expandable><b>{question_number}</b>: {answer}</blockquote>"
+    message += f"\n\n{RLM}<blockquote expandable>{question_number}: {answer}</blockquote>"
 
     return message, headers
 
