@@ -15,6 +15,8 @@ API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 # ماده‌های قانونی رو به‌صورت خودکار به شکل «چیپ» مونواسپیس درمی‌آوریم
 CITATION_RE = re.compile(r"(ماده\s+[۰-۹\d]+\s+ق\.[آاٱ]\.د\.[مک]\.?)")
 OPTION_RE = re.compile(r"^([۱۲۳۴])\)\s*(.*)$", re.S)
+DIGIT_RE = re.compile(r"[۰-۹\d]")
+SEPARATOR = "ـــــــــــــــ"
 
 
 def highlight_citations(text: str) -> str:
@@ -121,10 +123,19 @@ def format_message(question_text, headers):
 
     message = ""
     if headers:
-        message += " ".join(headers) + "\n\n"
+        # هشتگ درس (بدون رقم، مثل #مدنی) تنها و اول می‌آید؛ هشتگ‌های آزمون/سال
+        # (که رقم دارند، مثل #دادآفرین_۱۲ یا #وکالت_۱۴۰۵) زیرش می‌آیند.
+        subject_headers = [h for h in headers if not DIGIT_RE.search(h)]
+        other_headers = [h for h in headers if DIGIT_RE.search(h)]
+        if subject_headers:
+            message += " ".join(subject_headers) + "\n"
+        if other_headers:
+            message += " ".join(other_headers) + "\n"
+        message += "\n"
 
-    message += f"{RLM}<b>سوال {question_number}</b>\n"
+    message += f"{RLM}│ <b>سوال {question_number}</b>\n"
     message += f"{RLM}<blockquote>{question}</blockquote>\n\n"
+    message += f"{RLM}{SEPARATOR}\n\n"
 
     option_lines = []
     for opt in options:
