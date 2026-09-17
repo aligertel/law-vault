@@ -121,11 +121,10 @@ def format_message(question_text, headers):
 
     message = ""
     if headers:
-        message += f"{RLM}<code>{' '.join(headers)}</code>\n\n"
+        message += " ".join(headers) + "\n\n"
 
     message += f"{RLM}<b>سوال {question_number}</b>\n"
-    message += f"{RLM}<blockquote>{question}</blockquote>\n\n\n"
-    message += f"{RLM}⸻\n\n"
+    message += f"{RLM}<blockquote>{question}</blockquote>\n\n"
 
     option_lines = []
     for opt in options:
@@ -155,8 +154,6 @@ def format_message(question_text, headers):
             f"{RLM}<blockquote expandable>{fold_padding}"
             f"<b>پاسخ</b>\n\n{answer}</blockquote>"
         )
-
-    message += f"\n\n{RLM}<i>— دادآفرین ۱۴۰۵</i>"
 
     return message
 
