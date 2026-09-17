@@ -12,14 +12,6 @@ QUESTIONS_FILE = os.environ.get("QUESTIONS_FILE", "questions.txt")
 RLM = "\u200F"
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
-PERSIAN_TO_LATIN = str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")
-
-
-def big_number(num_str: str) -> str:
-    """عدد سوال رو با ایموجی کیکپ (بزرگ و پررنگ) نشون می‌ده، مثل 1️⃣2️⃣"""
-    latin = num_str.translate(PERSIAN_TO_LATIN)
-    return "".join(f"{d}\ufe0f\u20e3" for d in latin)
-
 # ماده‌های قانونی رو به‌صورت خودکار به شکل «چیپ» مونواسپیس درمی‌آوریم
 CITATION_RE = re.compile(r"(ماده\s+[۰-۹\d]+\s+ق\.[آاٱ]\.د\.[مک]\.?)")
 OPTION_RE = re.compile(r"^([۱۲۳۴])\)\s*(.*)$", re.S)
@@ -131,7 +123,7 @@ def format_message(question_text, headers):
     if headers:
         message += " ".join(headers) + "\n\n"
 
-    message += f"{RLM}{big_number(question_number)}\n"
+    message += f"{RLM}<b>سوال {question_number}</b>\n"
     message += f"{RLM}<blockquote>{question}</blockquote>\n\n"
 
     option_lines = []
