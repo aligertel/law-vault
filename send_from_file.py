@@ -16,7 +16,6 @@ API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 CITATION_RE = re.compile(r"(ماده\s+[۰-۹\d]+\s+ق\.[آاٱ]\.د\.[مک]\.?)")
 OPTION_RE = re.compile(r"^([۱۲۳۴])\)\s*(.*)$", re.S)
 DIGIT_RE = re.compile(r"[۰-۹\d]")
-SEPARATOR = "ـــــــــــــــ"
 
 
 def highlight_citations(text: str) -> str:
@@ -135,7 +134,6 @@ def format_message(question_text, headers):
 
     message += f"{RLM}│ <b>سوال {question_number}</b>\n"
     message += f"{RLM}<blockquote>{question}</blockquote>\n\n"
-    message += f"{RLM}{SEPARATOR}\n\n"
 
     option_lines = []
     for opt in options:
