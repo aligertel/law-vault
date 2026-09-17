@@ -14,7 +14,7 @@ API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
 # ماده‌های قانونی رو به‌صورت خودکار به شکل «چیپ» مونواسپیس درمی‌آوریم
 CITATION_RE = re.compile(r"(ماده\s+[۰-۹\d]+\s+ق\.[آاٱ]\.د\.[مک]\.?)")
-OPTION_RE = re.compile(r"^(الف|ب|ج|د)\)\s*(.*)$", re.S)
+OPTION_RE = re.compile(r"^([۱۲۳۴])\)\s*(.*)$", re.S)
 
 
 def highlight_citations(text: str) -> str:
@@ -107,7 +107,7 @@ def format_message(question_text, headers):
         elif stripped.startswith("پاسخ:"):
             answer_parts.append(stripped.replace("پاسخ:", "").strip())
             in_question, in_answer = False, True
-        elif any(stripped.startswith(ch) for ch in ["الف)", "ب)", "ج)", "د)"]):
+        elif any(stripped.startswith(ch) for ch in ["۱)", "۲)", "۳)", "۴)"]):
             options.append(stripped)
             in_question, in_answer = False, False
         elif in_question and stripped:
