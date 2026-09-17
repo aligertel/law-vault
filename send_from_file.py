@@ -12,10 +12,13 @@ API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 EXPLANATION_TEXT = "بریم پاسخ رو با هم ببینیم."
 
-def ensure_foldable(text, pad_lines=10):
+def ensure_foldable(text, min_lines=4, pad_lines=3, chars_per_line=40):
+    """ترفند کلود: اگر محتوای داخل blockquote کمتر از ۴ خط تخمینی باشد، خط خالی اضافه کن."""
     def pad_match(m):
         inner = m.group(1)
-        inner = ("\n" * pad_lines) + inner
+        approx_lines = inner.count("\n") + 1 + len(inner) // chars_per_line
+        if approx_lines < min_lines:
+            inner = ("\n" * pad_lines) + inner
         return f"<blockquote expandable>{inner}</blockquote>"
     return re.sub(
         r"<blockquote expandable>(.*?)</blockquote>",
@@ -132,7 +135,8 @@ def main():
             time.sleep(3)
 
             hashtag_text = " ".join(headers) if headers else ""
-            reply_text = f"{hashtag_text}\n\n{q_num}: {answer}"
+            # پاسخ داخل blockquote expandable قرار می‌گیرد
+            reply_text = f"{hashtag_text}\n\n<blockquote expandable>{q_num}: {answer}</blockquote>"
 
             if send_reply(reply_text, poll_msg_id):
                 print(f"سوال {i}: پاسخ تاشو ارسال شد ✓")
