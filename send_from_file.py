@@ -8,10 +8,11 @@ CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "@hajimirzamahmoud")
 QUESTIONS_FILE = "questions.txt"
 
 RLM = "\u200F"
-API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
+
+EXPLANATION_TEXT = "اوه! نزدیک بود. بیا با هم پاسخ رو بخونیم تا این نکته رو برای همیشه یاد بگیری."
 
 def ensure_foldable(text, pad_lines=5):
-    """همیشه چند خط خالی قبل از پاسخ اضافه می‌کند تا پیش‌نمایش خالی بماند."""
     def pad_match(m):
         inner = m.group(1)
         inner = ("\n" * pad_lines) + inner
@@ -23,18 +24,41 @@ def ensure_foldable(text, pad_lines=5):
         flags=re.S,
     )
 
-def send_message(text, retries=3):
+def send_poll(question, options, correct_index):
+    url = f"{API_URL}/sendPoll"
+    payload = {
+        "chat_id": CHANNEL_ID,
+        "question": question,
+        "options": options,
+        "type": "quiz",
+        "correct_option_id": correct_index,
+        "explanation": EXPLANATION_TEXT,
+        "is_anonymous": True,
+    }
+    response = requests.post(url, json=payload, timeout=30)
+    if not response.ok:
+        print(f"خطای پُل: {response.text}")
+        return None
+    return response.json().get("result", {}).get("message_id")
+
+def send_reply(text, reply_to_message_id, retries=3):
     text = ensure_foldable(text)
-    payload = {"chat_id": CHANNEL_ID, "text": text, "parse_mode": "HTML"}
+    url = f"{API_URL}/sendMessage"
+    payload = {
+        "chat_id": CHANNEL_ID,
+        "text": text,
+        "parse_mode": "HTML",
+        "reply_parameters": '{"message_id": ' + str(reply_to_message_id) + '}',
+    }
     for attempt in range(retries):
         try:
-            response = requests.post(API_URL, json=payload, timeout=30)
+            response = requests.post(url, json=payload, timeout=30)
             if response.status_code == 429:
                 retry = response.json().get("parameters", {}).get("retry_after", 5)
                 time.sleep(retry + 1)
                 continue
             if not response.ok:
-                print(f"خطا: {response.text}")
+                print(f"خطای ریپلای: {response.text}")
                 return False
             return True
         except requests.exceptions.RequestException as e:
@@ -46,14 +70,10 @@ def load_questions(filepath):
     with open(filepath, encoding="utf-8") as f:
         content = f.read()
     parts = re.split(r'\n(?=سوال\s)', content)
-    blocks = []
-    for p in parts:
-        p = p.strip()
-        if p and "سوال" in p:
-            blocks.append(p)
+    blocks = [p.strip() for p in parts if p.strip() and "سوال" in p]
     return blocks
 
-def format_message(block, last_headers=None):
+def format_poll_data(block):
     lines = block.split("\n")
     headers = []
     question = ""
@@ -75,31 +95,47 @@ def format_message(block, last_headers=None):
         elif any(line.startswith(ch) for ch in ["الف)", "ب)", "ج)", "د)"]):
             options.append(line)
 
-    if not headers and last_headers:
-        headers = last_headers
+    return headers, question_number, question, options, answer
 
-    message = ""
-    if headers:
-        message += " ".join(headers) + "\n\n"
-
-    message += f"{RLM}<b>{question_number}</b>: {question}\n\n"
-    message += "\n\n".join([RLM + opt for opt in options])
-    message += f"\n\n{RLM}<blockquote expandable>{question_number}: {answer}</blockquote>"
-
-    return message, headers
+def find_correct_index(answer):
+    match = re.search(r'گزینه\s+([۱-۴1-4])', answer)
+    if match:
+        num = match.group(1)
+        mapping = {"۱": 0, "۱": 0, "۲": 1, "۲": 1, "۳": 2, "۳": 2, "۴": 3, "۴": 3,
+                   "1": 0, "2": 1, "3": 2, "4": 3}
+        return mapping.get(num, 0)
+    return 0
 
 def main():
     blocks = load_questions(QUESTIONS_FILE)
     print(f"{len(blocks)} سوال پیدا شد.")
     last_headers = None
     for i, block in enumerate(blocks, 1):
-        msg, headers = format_message(block, last_headers)
+        headers, q_num, question, options, answer = format_poll_data(block)
+        if not headers and last_headers:
+            headers = last_headers
         if headers:
             last_headers = headers
-        if send_message(msg):
-            print(f"سوال {i} ارسال شد ✓")
+
+        # هشتگ‌ها را به صورت متن به سوال اضافه کن
+        hashtag_text = " ".join(headers) if headers else ""
+        poll_question = f"{hashtag_text}\n\n{q_num}: {question}"
+        if len(poll_question) > 300:
+            poll_question = poll_question[:297] + "..."
+
+        correct_index = find_correct_index(answer)
+
+        poll_msg_id = send_poll(poll_question, options, correct_index)
+        if poll_msg_id:
+            print(f"سوال {i}: پُل ارسال شد ✓")
+            time.sleep(3)
+            reply_text = f"{q_num}: {answer}"
+            if send_reply(reply_text, poll_msg_id):
+                print(f"سوال {i}: پاسخ تاشو ارسال شد ✓")
+            else:
+                print(f"سوال {i}: پاسخ تاشو ناموفق ✗")
         else:
-            print(f"سوال {i} ناموفق ✗")
+            print(f"سوال {i}: پُل ناموفق ✗")
         time.sleep(5)
 
 if __name__ == "__main__":
