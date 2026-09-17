@@ -15,5 +15,4 @@ jobs:
       - env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHANNEL_ID: "@hajimirzamahmoud"
-          QUESTIONS_FILE: "test_questions.txt"
         run: python send_from_file.py
