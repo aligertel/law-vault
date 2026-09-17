@@ -97,17 +97,18 @@ def format_message(block, last_headers=None):
     if headers:
         message += " ".join(headers) + "\n\n"
 
-    message += f"{RLM}❓ <code>سوال {question_number}</code>\n"
+    message += f"{RLM}<code>سوال {question_number}</code>\n"
     message += f"{RLM}<b>{question}</b>\n\n"
-    message += "\n\n".join([f"{RLM}▫️ {opt}" for opt in options_escaped])
-    message += f"\n\n{RLM}{DIVIDER}\n"
+    message += "\n\n".join([f"{RLM}○ {opt}" for opt in options_escaped])
+    message += "\n\n"
 
+    fold_padding = "\n" * 3
     short_match = re.match(r"(گزینه\s+[۰-۹\d]+\s+صحیح\s+است\.?)\s*(.*)", answer, re.S)
     if short_match:
         short_answer, rest_answer = short_match.group(1), short_match.group(2).strip()
-        message += f"{RLM}<blockquote expandable>🎯 <b>{short_answer}</b>\n\n📎 {rest_answer}</blockquote>"
+        message += f"{RLM}<blockquote expandable>{fold_padding}<b>{short_answer}</b>\n\n{rest_answer}</blockquote>"
     else:
-        message += f"{RLM}<blockquote expandable>✅ <b>پاسخ</b>\n\n{answer}</blockquote>"
+        message += f"{RLM}<blockquote expandable>{fold_padding}<b>پاسخ</b>\n\n{answer}</blockquote>"
 
     return message, headers
 
