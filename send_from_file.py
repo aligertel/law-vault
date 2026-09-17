@@ -10,8 +10,6 @@ QUESTIONS_FILE = "questions.txt"
 RLM = "\u200F"
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
-EXPLANATION_TEXT = "بریم پاسخ رو با هم ببینیم."
-
 def ensure_foldable(text, pad_lines=3):
     def pad_match(m):
         inner = m.group(1)
@@ -24,41 +22,18 @@ def ensure_foldable(text, pad_lines=3):
         flags=re.S,
     )
 
-def send_poll(question, options, correct_index):
-    url = f"{API_URL}/sendPoll"
-    payload = {
-        "chat_id": CHANNEL_ID,
-        "question": question[:300],
-        "options": [opt[:100] for opt in options],
-        "type": "quiz",
-        "correct_option_id": correct_index,
-        "explanation": EXPLANATION_TEXT[:200],
-        "is_anonymous": True,
-    }
-    response = requests.post(url, json=payload, timeout=30)
-    if not response.ok:
-        print(f"خطای پُل: {response.text}")
-        return None
-    return response.json().get("result", {}).get("message_id")
-
-def send_reply(text, reply_to_message_id, retries=3):
+def send_message(text, retries=3):
     text = ensure_foldable(text)
-    url = f"{API_URL}/sendMessage"
-    payload = {
-        "chat_id": CHANNEL_ID,
-        "text": text,
-        "parse_mode": "HTML",
-        "reply_parameters": {"message_id": reply_to_message_id},
-    }
+    payload = {"chat_id": CHANNEL_ID, "text": text, "parse_mode": "HTML"}
     for attempt in range(retries):
         try:
-            response = requests.post(url, json=payload, timeout=30)
+            response = requests.post(f"{API_URL}/sendMessage", json=payload, timeout=30)
             if response.status_code == 429:
                 retry = response.json().get("parameters", {}).get("retry_after", 5)
                 time.sleep(retry + 1)
                 continue
             if not response.ok:
-                print(f"خطای ریپلای: {response.text}")
+                print(f"خطا: {response.text}")
                 return False
             return True
         except requests.exceptions.RequestException as e:
@@ -73,7 +48,7 @@ def load_questions(filepath):
     blocks = [p.strip() for p in parts if p.strip() and "سوال" in p]
     return blocks
 
-def format_poll_data(block):
+def format_message(block, last_headers=None):
     lines = block.split("\n")
     headers = []
     question_parts = []
@@ -97,58 +72,38 @@ def format_poll_data(block):
             answer = line.replace("پاسخ:", "").strip()
             in_question = False
         elif any(line.startswith(ch) for ch in ["الف)", "ب)", "ج)", "د)"]):
-            opt_text = re.sub(r'^(الف|ب|ج|د)\)\s*', '', line)
-            options.append(opt_text)
+            options.append(line)
             in_question = False
         elif in_question and line.strip():
             question_parts.append(line.strip())
 
     question = " ".join(question_parts)
 
-    return headers, question_number, question, options, answer
+    if not headers and last_headers:
+        headers = last_headers
 
-def find_correct_index(answer):
-    match = re.search(r'گزینه\s+([۱-۴1-4])', answer)
-    if match:
-        num = match.group(1)
-        mapping = {"۱": 0, "۲": 1, "۳": 2, "۴": 3,
-                   "1": 0, "2": 1, "3": 2, "4": 3}
-        return mapping.get(num, 0)
-    return 0
+    message = ""
+    if headers:
+        message += " ".join(headers) + "\n\n"
+
+    message += f"{RLM}<b>{question_number}</b>: {question}\n\n"
+    message += "\n\n".join([RLM + opt for opt in options])
+    message += f"\n\n{RLM}<blockquote expandable>{question_number}: {answer}</blockquote>"
+
+    return message, headers
 
 def main():
     blocks = load_questions(QUESTIONS_FILE)
     print(f"{len(blocks)} سوال پیدا شد.")
     last_headers = None
     for i, block in enumerate(blocks, 1):
-        headers, q_num, question, options, answer = format_poll_data(block)
-        if not headers and last_headers:
-            headers = last_headers
+        msg, headers = format_message(block, last_headers)
         if headers:
             last_headers = headers
-
-        poll_question = f"{q_num}: {question}"
-
-        if len(options) != 4:
-            print(f"سوال {i}: تعداد گزینه‌ها {len(options)} است — رد شد.")
-            continue
-
-        correct_index = find_correct_index(answer)
-
-        poll_msg_id = send_poll(poll_question, options, correct_index)
-        if poll_msg_id:
-            print(f"سوال {i}: پُل ارسال شد ✓")
-            time.sleep(3)
-
-            hashtag_text = " ".join(headers) if headers else ""
-            reply_text = f"{hashtag_text}\n\n<blockquote expandable>{answer}</blockquote>"
-
-            if send_reply(reply_text, poll_msg_id):
-                print(f"سوال {i}: پاسخ تاشو ارسال شد ✓")
-            else:
-                print(f"سوال {i}: پاسخ تاشو ناموفق ✗")
+        if send_message(msg):
+            print(f"سوال {i} ارسال شد ✓")
         else:
-            print(f"سوال {i}: پُل ناموفق ✗")
+            print(f"سوال {i} ناموفق ✗")
         time.sleep(5)
 
 if __name__ == "__main__":
