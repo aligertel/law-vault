@@ -10,7 +10,21 @@ QUESTIONS_FILE = "questions.txt"
 RLM = "\u200F"
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
+def ensure_foldable(text, pad_lines=5):
+    """همیشه چند خط خالی قبل از پاسخ اضافه می‌کند تا پیش‌نمایش خالی بماند."""
+    def pad_match(m):
+        inner = m.group(1)
+        inner = ("\n" * pad_lines) + inner
+        return f"<blockquote expandable>{inner}</blockquote>"
+    return re.sub(
+        r"<blockquote expandable>(.*?)</blockquote>",
+        pad_match,
+        text,
+        flags=re.S,
+    )
+
 def send_message(text, retries=3):
+    text = ensure_foldable(text)
     payload = {"chat_id": CHANNEL_ID, "text": text, "parse_mode": "HTML"}
     for attempt in range(retries):
         try:
@@ -63,10 +77,6 @@ def format_message(block, last_headers=None):
 
     if not headers and last_headers:
         headers = last_headers
-
-    # ترفند: اگر پاسخ کوتاه است، چند خط خالی اضافه کن تا تاشو شود
-    if len(answer) < 200:
-        answer = "\n\n\n" + answer
 
     message = ""
     if headers:
