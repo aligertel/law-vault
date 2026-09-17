@@ -8,7 +8,7 @@ CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "@hajimirzamahmoud")
 QUESTIONS_FILE = "questions.txt"
 
 RLM = "\u200F"
-API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
+API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
 def ensure_foldable(text, pad_lines=3):
     def pad_match(m):
@@ -27,7 +27,7 @@ def send_message(text, retries=3):
     payload = {"chat_id": CHANNEL_ID, "text": text, "parse_mode": "HTML"}
     for attempt in range(retries):
         try:
-            response = requests.post(f"{API_URL}/sendMessage", json=payload, timeout=30)
+            response = requests.post(API_URL, json=payload, timeout=30)
             if response.status_code == 429:
                 retry = response.json().get("parameters", {}).get("retry_after", 5)
                 time.sleep(retry + 1)
@@ -77,10 +77,10 @@ def format_message(block, last_headers=None):
         elif in_question and line.strip():
             question_parts.append(line.strip())
 
-    question = " ".join(question_parts)
-
     if not headers and last_headers:
         headers = last_headers
+
+    question = " ".join(question_parts)
 
     message = ""
     if headers:
@@ -88,7 +88,7 @@ def format_message(block, last_headers=None):
 
     message += f"{RLM}<b>{question_number}</b>: {question}\n\n"
     message += "\n\n".join([RLM + opt for opt in options])
-    message += f"\n\n{RLM}<blockquote expandable>{question_number}: {answer}</blockquote>"
+    message += f"\n\n{RLM}<blockquote expandable>{answer}</blockquote>"
 
     return message, headers
 
