@@ -2,6 +2,11 @@ name: Send From File
 
 on:
   workflow_dispatch:
+    inputs:
+      questions_file:
+        description: 'مسیر فایل سوالات'
+        required: false
+        default: 'questions.txt'
 
 jobs:
   send:
@@ -15,4 +20,5 @@ jobs:
       - env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHANNEL_ID: "@hajimirzamahmoud"
+          QUESTIONS_FILE: ${{ github.event.inputs.questions_file }}
         run: python send_from_file.py
