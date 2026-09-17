@@ -61,7 +61,6 @@ def format_message(block, last_headers=None):
         elif any(line.startswith(ch) for ch in ["الف)", "ب)", "ج)", "د)"]):
             options.append(line)
 
-    # اگر این بلاک هدر ندارد، از بلاک قبلی هدر بگیر
     if not headers and last_headers:
         headers = last_headers
 
@@ -69,12 +68,8 @@ def format_message(block, last_headers=None):
     if headers:
         message += " ".join(headers) + "\n\n"
 
-    message += f"{RLM}🔒 <b>{question_number}</b>: {question}\n"
-    message += f"{RLM}──────────────────\n\n"
-
-    separator = f"\n{RLM}┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
-    message += separator.join([RLM + opt for opt in options])
-
+    message += f"{RLM}🔒 <b>{question_number}</b>: {question}\n\n"
+    message += "\n\n".join([RLM + opt for opt in options])
     message += f"\n\n{RLM}🔑 <b>{question_number}</b>: <tg-spoiler>{RLM}{answer}</tg-spoiler>"
 
     return message, headers
