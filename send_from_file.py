@@ -12,13 +12,11 @@ API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 EXPLANATION_TEXT = "بریم پاسخ رو با هم ببینیم."
 
-def ensure_foldable(text, min_lines=4, pad_lines=3, chars_per_line=40):
-    """ترفند کلود: اگر محتوای داخل blockquote کمتر از ۴ خط تخمینی باشد، خط خالی اضافه کن."""
+def ensure_foldable(text, pad_lines=3):
+    """همیشه ۳ خط خالی قبل از پاسخ اضافه می‌کند تا پیش‌نمایش خالی بماند."""
     def pad_match(m):
         inner = m.group(1)
-        approx_lines = inner.count("\n") + 1 + len(inner) // chars_per_line
-        if approx_lines < min_lines:
-            inner = ("\n" * pad_lines) + inner
+        inner = ("\n" * pad_lines) + inner
         return f"<blockquote expandable>{inner}</blockquote>"
     return re.sub(
         r"<blockquote expandable>(.*?)</blockquote>",
