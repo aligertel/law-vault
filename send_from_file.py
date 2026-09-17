@@ -101,7 +101,15 @@ def format_message(block, last_headers=None):
     message += f"{RLM}<b>{question}</b>\n\n"
     message += "\n\n".join([f"{RLM}▫️ {opt}" for opt in options_escaped])
     message += f"\n\n{RLM}{DIVIDER}\n"
-    message += f"{RLM}<blockquote expandable>✅ <b>پاسخ</b>\n\n{answer}</blockquote>"
+
+    short_match = re.match(r"(گزینه\s+[۰-۹\d]+\s+صحیح\s+است\.?)\s*(.*)", answer, re.S)
+    if short_match:
+        short_answer, rest_answer = short_match.group(1), short_match.group(2).strip()
+        message += f"{RLM}<blockquote>🎯 <b>{short_answer}</b></blockquote>\n"
+        if rest_answer:
+            message += f"{RLM}<blockquote expandable>📎 <b>توضیح کامل</b>\n\n{rest_answer}</blockquote>"
+    else:
+        message += f"{RLM}<blockquote expandable>✅ <b>پاسخ</b>\n\n{answer}</blockquote>"
 
     return message, headers
 
