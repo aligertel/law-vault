@@ -18,7 +18,7 @@ OPTION_RE = re.compile(r"^([۱۲۳۴])\)\s*(.*)$", re.S)
 
 # قاعده‌ی تاییدشده: نوع‌آزمون ← موسسه ← سال ← شماره‌آزمون ← درس ← نوع‌محتوا
 EXAM_TYPES = {"وکالت", "ارشد", "دکتری", "قضاوت", "سردفتری"}
-INSTITUTES = {"دادآفرین", "چتردانش", "عمرانی", "قربانی"}
+SOURCES = {"دادآفرین", "چتردانش", "عمروانی", "قربانی"}
 SUBJECTS = {"مدنی", "تجارت", "جزا", "آیین_دادرسی_مدنی"}
 CONTENT_TYPES = {"تست", "تشریحی", "مقاله", "نمودار"}
 YEAR_RE = re.compile(r"^(سال)?[۰-۹\d]{4}$")
@@ -28,7 +28,7 @@ EXAM_NUM_RE = re.compile(r"^آزمون[۰-۹\d]+$")
 def category_rank(tag_name: str) -> int:
     if tag_name in EXAM_TYPES:
         return 0
-    if tag_name in INSTITUTES:
+    if tag_name in SOURCES:
         return 1
     if YEAR_RE.match(tag_name):
         return 2
