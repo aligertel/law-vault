@@ -10,39 +10,12 @@ CHANNEL_ID = os.environ.get("TELEGRAM_CHANNEL_ID", "@hajimirzamahmoud")
 QUESTIONS_FILE = os.environ.get("QUESTIONS_FILE", "questions.txt")
 
 RLM = "\u200F"
-DIVIDER = "──────────"
 API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-
-# قاعده‌ی تاییدشده: نوع‌آزمون ← موسسه ← سال ← شماره‌آزمون ← درس ← نوع‌محتوا
-EXAM_TYPES = {"وکالت", "ارشد", "دکتری", "قضاوت", "سردفتری"}
-INSTITUTES = {"دادآفرین", "چتردانش", "عمرانی", "قربانی"}
-SUBJECTS = {"مدنی", "تجارت", "جزا", "آیین_دادرسی_مدنی"}
-CONTENT_TYPES = {"تست", "تشریحی", "مقاله", "نمودار"}
-YEAR_RE = re.compile(r"^[۰-۹\d]{4}$")
-EXAM_NUM_RE = re.compile(r"^آزمون[۰-۹\d]+$")
-
-
-def category_rank(tag_name: str) -> int:
-    if tag_name in EXAM_TYPES:
-        return 0
-    if tag_name in INSTITUTES:
-        return 1
-    if YEAR_RE.match(tag_name):
-        return 2
-    if EXAM_NUM_RE.match(tag_name):
-        return 3
-    if tag_name in SUBJECTS:
-        return 4
-    if tag_name in CONTENT_TYPES:
-        return 5
-    return 6  # هشتگ ناشناخته، آخر صف
-
-
-def order_headers(headers):
-    return sorted(headers, key=lambda h: category_rank(h.lstrip("#")))
 
 # ماده‌های قانونی رو به‌صورت خودکار به شکل «چیپ» مونواسپیس درمی‌آوریم
 CITATION_RE = re.compile(r"(ماده\s+[۰-۹\d]+\s+ق\.[آاٱ]\.د\.[مک]\.?)")
+OPTION_RE = re.compile(r"^([۱۲۳۴])\)\s*(.*)$", re.S)
+DIGIT_RE = re.compile(r"[۰-۹\d]")
 
 
 def highlight_citations(text: str) -> str:
@@ -69,16 +42,52 @@ def send_message(text, retries=3):
 
 
 def load_questions(filepath):
+    """
+    کل فایل رو خط به خط می‌خونه، نه با split ساده. هر بار که یک یا چند خط
+    هشتگ/دسته‌بندی به شکل [برچسب] دیده بشه، آن دسته‌بندی برای تمام سوالات
+    بعدی فعال می‌ماند تا دسته‌بندی جدیدی ظاهر شود. این کار باگ قدیمی
+    (اختصاص هشتگ‌های اشتباه یا از‌دست‌رفتن هشتگ سوال اول/تنها) را رفع می‌کند
+    و برای فایلی با هر تعداد سوال (یک تا صدها) درست کار می‌کند.
+    برمی‌گرداند: لیستی از (headers, question_text) برای هر سوال.
+    """
     with open(filepath, encoding="utf-8") as f:
-        content = f.read()
-    parts = re.split(r'\n(?=سوال\s)', content)
-    blocks = [p.strip() for p in parts if p.strip() and "سوال" in p]
+        lines = f.read().split("\n")
+
+    blocks = []
+    header_buffer = []
+    active_headers = []
+    current_lines = []
+    # وقتی True است یعنی اولین خط هشتگ بعدی باید شروع یک دسته‌ی تازه باشد
+    # (نه ادامه‌ی دسته‌ی سوال قبلی) — این پرچم دقیقاً همان چیزی است که باگ
+    # «تجمیع نامحدود هشتگ‌ها روی هم» را رفع می‌کند.
+    expect_new_batch = True
+
+    def flush():
+        if current_lines and any("سوال" in ln for ln in current_lines):
+            blocks.append((active_headers[:], "\n".join(current_lines).strip()))
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            flush()
+            current_lines = []
+            if expect_new_batch:
+                header_buffer = []
+                expect_new_batch = False
+            header_buffer.append("#" + stripped.strip("[]").strip())
+            active_headers = header_buffer[:]
+        elif re.match(r"^سوال\s", stripped):
+            flush()
+            current_lines = [line]
+            expect_new_batch = True
+        else:
+            current_lines.append(line)
+    flush()
     return blocks
 
 
-def format_message(block, last_headers=None):
-    lines = block.split("\n")
-    headers = []
+def format_message(question_text, headers):
+    lines = question_text.split("\n")
     question_parts = []
     question_number = ""
     options = []
@@ -88,10 +97,7 @@ def format_message(block, last_headers=None):
 
     for line in lines:
         stripped = line.strip()
-        if stripped.startswith("[") and "]" in stripped:
-            headers.extend("#" + m.strip() for m in re.findall(r"\[([^\[\]]+)\]", stripped))
-            in_question = in_answer = False
-        elif stripped.startswith("سوال"):
+        if stripped.startswith("سوال"):
             match = re.match(r'سوال\s+([\u06F0-\u06F9\d]+)\s*[:\-ـ]?\s*(.*)', stripped)
             if match:
                 question_number = match.group(1)
@@ -102,42 +108,63 @@ def format_message(block, last_headers=None):
         elif stripped.startswith("پاسخ:"):
             answer_parts.append(stripped.replace("پاسخ:", "").strip())
             in_question, in_answer = False, True
-        elif any(stripped.startswith(ch) for ch in ["الف)", "ب)", "ج)", "د)"]):
+        elif any(stripped.startswith(ch) for ch in ["۱)", "۲)", "۳)", "۴)"]):
             options.append(stripped)
             in_question, in_answer = False, False
         elif in_question and stripped:
             question_parts.append(stripped)
         elif in_answer and stripped:
-            # رفع باگ: خطوط بعدیِ پاسخ چندخطی هم حفظ می‌شوند، نه فقط خط اول
+            # خطوط بعدیِ پاسخ چندخطی هم حفظ می‌شوند، نه فقط خط اول
             answer_parts.append(stripped)
 
-    if not headers and last_headers:
-        headers = last_headers
-
-    question = html.escape(" ".join(question_parts))
-    answer = html.escape(" ".join(answer_parts))
-    options_escaped = [html.escape(opt) for opt in options]
-
-    question = highlight_citations(question)
-    answer = highlight_citations(answer)
+    question = highlight_citations(html.escape(" ".join(question_parts)))
+    answer = highlight_citations(html.escape(" ".join(answer_parts)))
 
     message = ""
     if headers:
-        message += " ".join(order_headers(headers)) + "\n\n"
+        # هشتگ درس (بدون رقم، مثل #مدنی) تنها و اول می‌آید؛ هشتگ‌های آزمون/سال
+        # (که رقم دارند، مثل #دادآفرین_۱۲ یا #وکالت_۱۴۰۵) زیرش می‌آیند.
+        subject_headers = [h for h in headers if not DIGIT_RE.search(h)]
+        other_headers = [h for h in headers if DIGIT_RE.search(h)]
+        if subject_headers:
+            message += f"{RLM}│ " + " ".join(subject_headers) + "\n"
+        if other_headers:
+            message += f"{RLM}│ " + " ".join(other_headers) + "\n"
+        message += "\n"
 
-    message += f"{RLM}❓ <code>سوال {question_number}</code>\n"
-    message += f"{RLM}<b>{question}</b>\n\n"
-    message += "\n\n".join([f"{RLM}▫️ {opt}" for opt in options_escaped])
-    message += f"\n\n{RLM}{DIVIDER}\n"
+    message += f"{RLM}│ <b>سوال {question_number}</b>\n"
+    message += f"{RLM}<blockquote>{question}</blockquote>\n\n"
 
+    option_lines = []
+    for opt in options:
+        m = OPTION_RE.match(opt)
+        if m:
+            label, body = m.group(1), highlight_citations(html.escape(m.group(2)))
+            option_lines.append(f"{RLM}<code>{label})</code> {body}")
+        else:
+            option_lines.append(f"{RLM}{highlight_citations(html.escape(opt))}")
+    message += "\n\n".join(option_lines)
+    message += "\n\n"
+
+    # فاصله‌ی خالی قبل از متن پاسخ داخل بلاک‌کوت تاشو، تا در حالت بسته
+    # هیچ بخشی از پاسخ بیرون نماند و کاربر مجبور شود برای دیدن آن باز کند.
+    fold_padding = "\n" * 3
     short_match = re.match(r"(گزینه\s+[۰-۹\d]+\s+صحیح\s+است\.?)\s*(.*)", answer, re.S)
     if short_match:
         short_answer, rest_answer = short_match.group(1), short_match.group(2).strip()
-        message += f"{RLM}<blockquote expandable>🎯 <b>{short_answer}</b>\n\n📎 {rest_answer}</blockquote>"
+        # لایه‌ی اول: پاسخ کوتاه به‌شکل اسپویلر (با یک تپ سریع دیده می‌شود)
+        message += f"{RLM}│ <b>پاسخ کوتاه:</b> <span class=\"tg-spoiler\">{short_answer}</span>\n"
+        # لایه‌ی دوم: استدلال کامل داخل بلاک‌کوت تاشو
+        message += (
+            f"{RLM}<blockquote expandable>{fold_padding}{rest_answer}</blockquote>"
+        )
     else:
-        message += f"{RLM}<blockquote expandable>✅ <b>پاسخ</b>\n\n{answer}</blockquote>"
+        message += (
+            f"{RLM}<blockquote expandable>{fold_padding}"
+            f"│ <b>پاسخ</b>\n\n{answer}</blockquote>"
+        )
 
-    return message, headers
+    return message
 
 
 def main():
@@ -148,12 +175,9 @@ def main():
     blocks = load_questions(QUESTIONS_FILE)
     print(f"{len(blocks)} سوال پیدا شد.")
 
-    last_headers = None
     failures = 0
-    for i, block in enumerate(blocks, 1):
-        msg, headers = format_message(block, last_headers)
-        if headers:
-            last_headers = headers
+    for i, (headers, text) in enumerate(blocks, 1):
+        msg = format_message(text, headers)
         if send_message(msg):
             print(f"سوال {i} ارسال شد ✓")
         else:
@@ -163,7 +187,7 @@ def main():
 
     if failures:
         print(f"{failures} سوال ناموفق بود.")
-        sys.exit(1)  # رفع باگ: حالا شکست واقعاً به CI گزارش می‌شود
+        sys.exit(1)
 
 
 if __name__ == "__main__":
