@@ -151,7 +151,15 @@ def variant_c_intro(headers):
 
 
 def main():
-    headers, number, question, options, answer = load_one_question(QUESTIONS_FILE)
+    print("QUESTIONS_FILE =", QUESTIONS_FILE, "exists:", os.path.exists(QUESTIONS_FILE))
+    try:
+        headers, number, question, options, answer = load_one_question(QUESTIONS_FILE)
+        print("headers:", headers)
+        print("number:", number)
+        print("options count:", len(options))
+    except Exception as e:
+        print("خطا در خواندن/پارس فایل سؤال:", repr(e))
+        return
 
     try:
         send_label("نسخه‌ی الف: جداکننده ➖ + 🔺 + ارجاع با 📎")
