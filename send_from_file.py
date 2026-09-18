@@ -126,10 +126,9 @@ def format_message(question_text, headers):
         # (که رقم دارند، مثل #دادآفرین_۱۲ یا #وکالت_۱۴۰۵) زیرش می‌آیند.
         subject_headers = [h for h in headers if not DIGIT_RE.search(h)]
         other_headers = [h for h in headers if DIGIT_RE.search(h)]
-        if subject_headers:
-            message += f"{RLM}│ " + " ".join(subject_headers) + "\n"
-        if other_headers:
-            message += f"{RLM}│ " + " ".join(other_headers) + "\n"
+        ordered_headers = subject_headers + other_headers
+        if ordered_headers:
+            message += f"{RLM}│ " + " ".join(ordered_headers) + "\n"
         message += "\n"
 
     message += f"{RLM}│ <b>سوال {question_number}</b>\n"
