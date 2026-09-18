@@ -15,7 +15,34 @@ API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 # ماده‌های قانونی رو به‌صورت خودکار به شکل «چیپ» مونواسپیس درمی‌آوریم
 CITATION_RE = re.compile(r"(ماده\s+[۰-۹\d]+\s+ق\.[آاٱ]\.د\.[مک]\.?)")
 OPTION_RE = re.compile(r"^([۱۲۳۴])\)\s*(.*)$", re.S)
-DIGIT_RE = re.compile(r"[۰-۹\d]")
+
+# قاعده‌ی تاییدشده: نوع‌آزمون ← موسسه ← سال ← شماره‌آزمون ← درس ← نوع‌محتوا
+EXAM_TYPES = {"وکالت", "ارشد", "دکتری", "قضاوت", "سردفتری"}
+INSTITUTES = {"دادآفرین", "چتردانش", "عمرانی", "قربانی"}
+SUBJECTS = {"مدنی", "تجارت", "جزا", "آیین_دادرسی_مدنی"}
+CONTENT_TYPES = {"تست", "تشریحی", "مقاله", "نمودار"}
+YEAR_RE = re.compile(r"^[۰-۹\d]{4}$")
+EXAM_NUM_RE = re.compile(r"^آزمون[۰-۹\d]+$")
+
+
+def category_rank(tag_name: str) -> int:
+    if tag_name in EXAM_TYPES:
+        return 0
+    if tag_name in INSTITUTES:
+        return 1
+    if YEAR_RE.match(tag_name):
+        return 2
+    if EXAM_NUM_RE.match(tag_name):
+        return 3
+    if tag_name in SUBJECTS:
+        return 4
+    if tag_name in CONTENT_TYPES:
+        return 5
+    return 6
+
+
+def order_headers(headers):
+    return sorted(headers, key=lambda h: category_rank(h.lstrip("#")))
 
 
 def highlight_citations(text: str) -> str:
@@ -68,13 +95,15 @@ def load_questions(filepath):
 
     for line in lines:
         stripped = line.strip()
-        if stripped.startswith("[") and stripped.endswith("]"):
+        if stripped.startswith("[") and "]" in stripped:
             flush()
             current_lines = []
             if expect_new_batch:
                 header_buffer = []
                 expect_new_batch = False
-            header_buffer.append("#" + stripped.strip("[]").strip())
+            header_buffer.extend(
+                "#" + m.strip() for m in re.findall(r"\[([^\[\]]+)\]", stripped)
+            )
             active_headers = header_buffer[:]
         elif re.match(r"^سوال\s", stripped):
             flush()
@@ -122,14 +151,7 @@ def format_message(question_text, headers):
 
     message = ""
     if headers:
-        # هشتگ درس (بدون رقم، مثل #مدنی) تنها و اول می‌آید؛ هشتگ‌های آزمون/سال
-        # (که رقم دارند، مثل #دادآفرین_۱۲ یا #وکالت_۱۴۰۵) زیرش می‌آیند.
-        subject_headers = [h for h in headers if not DIGIT_RE.search(h)]
-        other_headers = [h for h in headers if DIGIT_RE.search(h)]
-        ordered_headers = subject_headers + other_headers
-        if ordered_headers:
-            message += f"{RLM}│ " + " ".join(ordered_headers) + "\n"
-        message += "\n"
+        message += f"{RLM}│ " + " ".join(order_headers(headers)) + "\n\n"
 
     message += f"{RLM}│ <b>سوال {question_number}</b>\n"
     message += f"{RLM}<blockquote>{question}</blockquote>\n\n"
