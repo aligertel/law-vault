@@ -25,10 +25,14 @@ def highlight_citations(text, wrap="code"):
 
 def send_message(text):
     payload = {"chat_id": CHANNEL_ID, "text": text, "parse_mode": "HTML"}
-    r = requests.post(SEND_URL, json=payload, timeout=30)
-    if not r.ok:
-        print("خطا:", r.text)
-    return r.ok
+    try:
+        r = requests.post(SEND_URL, json=payload, timeout=30)
+        if not r.ok:
+            print("خطا:", r.text)
+        return r.ok
+    except requests.exceptions.RequestException as e:
+        print("خطای شبکه (send_message):", e)
+        return False
 
 
 def send_label(text):
@@ -45,10 +49,14 @@ def send_quiz_poll(question, options, correct_index):
         "correct_option_id": correct_index,
         "is_anonymous": True,
     }
-    r = requests.post(POLL_URL, json=payload, timeout=30)
-    if not r.ok:
-        print("خطا (poll):", r.text)
-    return r.ok
+    try:
+        r = requests.post(POLL_URL, json=payload, timeout=30)
+        if not r.ok:
+            print("خطا (poll):", r.text)
+        return r.ok
+    except requests.exceptions.RequestException as e:
+        print("خطای شبکه (poll):", e)
+        return False
 
 
 def load_one_question(filepath):
@@ -145,26 +153,38 @@ def variant_c_intro(headers):
 def main():
     headers, number, question, options, answer = load_one_question(QUESTIONS_FILE)
 
-    send_label("نسخه‌ی الف: جداکننده ➖ + 🔺 + ارجاع با 📎")
-    send_message(variant_a(headers, number, question, options, answer))
-    time.sleep(3)
+    try:
+        send_label("نسخه‌ی الف: جداکننده ➖ + 🔺 + ارجاع با 📎")
+        send_message(variant_a(headers, number, question, options, answer))
+        time.sleep(3)
+    except Exception as e:
+        print("خطا در نسخه‌ی الف:", e)
 
-    send_label("نسخه‌ی ب: پاسخ سه‌لایه (کوتاه ← راهنما ← استدلال کامل)")
-    send_message(variant_b(headers, number, question, options, answer))
-    time.sleep(3)
+    try:
+        send_label("نسخه‌ی ب: پاسخ سه‌لایه (کوتاه ← راهنما ← استدلال کامل)")
+        send_message(variant_b(headers, number, question, options, answer))
+        time.sleep(3)
+    except Exception as e:
+        print("خطا در نسخه‌ی ب:", e)
 
-    send_label("نسخه‌ی ج: پست معرفیِ 📂 قبل از شروع یک بخش")
-    send_message(variant_c_intro(headers))
-    time.sleep(3)
+    try:
+        send_label("نسخه‌ی ج: پست معرفیِ 📂 قبل از شروع یک بخش")
+        send_message(variant_c_intro(headers))
+        time.sleep(3)
+    except Exception as e:
+        print("خطا در نسخه‌ی ج:", e)
 
-    send_label("نسخه‌ی د: همون سؤال به شکل Quiz Poll واقعی تلگرام")
-    opt_bodies = [OPTION_RE.match(opt).group(2).strip() for opt in options]
-    persian_to_latin = str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")
-    correct_num_match = re.search(r"گزینه\s+([۰-۹\d])\s+صحیح", answer)
-    correct_index = 0
-    if correct_num_match:
-        correct_index = int(correct_num_match.group(1).translate(persian_to_latin)) - 1
-    send_quiz_poll(f"سوال {number}: {question}", opt_bodies, correct_index)
+    try:
+        send_label("نسخه‌ی د: همون سؤال به شکل Quiz Poll واقعی تلگرام")
+        opt_bodies = [OPTION_RE.match(opt).group(2).strip() for opt in options]
+        persian_to_latin = str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")
+        correct_num_match = re.search(r"گزینه\s+([۰-۹\d])\s+صحیح", answer)
+        correct_index = 0
+        if correct_num_match:
+            correct_index = int(correct_num_match.group(1).translate(persian_to_latin)) - 1
+        send_quiz_poll(f"سوال {number}: {question}", opt_bodies, correct_index)
+    except Exception as e:
+        print("خطا در نسخه‌ی د:", e)
 
 
 if __name__ == "__main__":
