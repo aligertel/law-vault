@@ -127,9 +127,9 @@ def format_message(question_text, headers):
         subject_headers = [h for h in headers if not DIGIT_RE.search(h)]
         other_headers = [h for h in headers if DIGIT_RE.search(h)]
         if subject_headers:
-            message += " ".join(subject_headers) + "\n"
+            message += f"{RLM}" + " ".join(subject_headers) + "\n"
         if other_headers:
-            message += " ".join(other_headers) + "\n"
+            message += f"{RLM}" + " ".join(other_headers) + "\n"
         message += "\n"
 
     message += f"{RLM}│ <b>سوال {question_number}</b>\n"
