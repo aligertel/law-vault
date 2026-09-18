@@ -148,7 +148,7 @@ def format_message(question_text, headers):
 
     # فاصله‌ی خالی قبل از متن پاسخ داخل بلاک‌کوت تاشو، تا در حالت بسته
     # هیچ بخشی از پاسخ بیرون نماند و کاربر مجبور شود برای دیدن آن باز کند.
-    fold_padding = "\n" * 2
+    fold_padding = "\n" * 3
     short_match = re.match(r"(گزینه\s+[۰-۹\d]+\s+صحیح\s+است\.?)\s*(.*)", answer, re.S)
     if short_match:
         short_answer, rest_answer = short_match.group(1), short_match.group(2).strip()
