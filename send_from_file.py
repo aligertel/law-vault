@@ -127,9 +127,9 @@ def format_message(question_text, headers):
         subject_headers = [h for h in headers if not DIGIT_RE.search(h)]
         other_headers = [h for h in headers if DIGIT_RE.search(h)]
         if subject_headers:
-            message += f"{RLM}" + " ".join(subject_headers) + "\n"
+            message += f"{RLM}│ " + " ".join(subject_headers) + "\n"
         if other_headers:
-            message += f"{RLM}" + " ".join(other_headers) + "\n"
+            message += f"{RLM}│ " + " ".join(other_headers) + "\n"
         message += "\n"
 
     message += f"{RLM}│ <b>سوال {question_number}</b>\n"
@@ -148,12 +148,12 @@ def format_message(question_text, headers):
 
     # فاصله‌ی خالی قبل از متن پاسخ داخل بلاک‌کوت تاشو، تا در حالت بسته
     # هیچ بخشی از پاسخ بیرون نماند و کاربر مجبور شود برای دیدن آن باز کند.
-    fold_padding = "\n" * 3
+    fold_padding = "\n" * 2
     short_match = re.match(r"(گزینه\s+[۰-۹\d]+\s+صحیح\s+است\.?)\s*(.*)", answer, re.S)
     if short_match:
         short_answer, rest_answer = short_match.group(1), short_match.group(2).strip()
         # لایه‌ی اول: پاسخ کوتاه به‌شکل اسپویلر (با یک تپ سریع دیده می‌شود)
-        message += f"{RLM}│ <b>پاسخ کوتاه:</b> <span class=\"tg-spoiler\">{short_answer}</span>\n\n"
+        message += f"{RLM}│ <b>پاسخ کوتاه:</b> <span class=\"tg-spoiler\">{short_answer}</span>\n"
         # لایه‌ی دوم: استدلال کامل داخل بلاک‌کوت تاشو
         message += (
             f"{RLM}<blockquote expandable>{fold_padding}{rest_answer}</blockquote>"
