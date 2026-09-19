@@ -14,7 +14,8 @@ API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
 # ماده‌های قانونی رو به‌صورت خودکار به شکل «چیپ» مونواسپیس درمی‌آوریم
 CITATION_RE = re.compile(r"(ماده\s+[۰-۹\d]+\s+ق\.[آاٱ]\.د\.[مک]\.?)")
-OPTION_RE = re.compile(r"^([۱۲۳۴])\)\s*(.*)$", re.S)
+OPTION_RE = re.compile(r"^(۱|۲|۳|۴|الف|ب|ج|د)\)\s*(.*)$", re.S)
+SOURCE_YEAR_RE = re.compile(r"^\(([^)]+)\)$")
 
 # قاعده‌ی تاییدشده: نوع‌آزمون ← موسسه ← سال ← شماره‌آزمون ← درس ← نوع‌محتوا
 EXAM_TYPES = {"وکالت", "ارشد", "دکتری", "قضاوت", "سردفتری"}
@@ -121,6 +122,7 @@ def format_message(question_text, headers):
     question_number = ""
     options = []
     answer_parts = []
+    extra_headers = []
     in_question = False
     in_answer = False
 
@@ -134,10 +136,19 @@ def format_message(question_text, headers):
             else:
                 question_parts.append(stripped.replace("سوال", "", 1).strip())
             in_question, in_answer = True, False
+        elif SOURCE_YEAR_RE.match(stripped):
+            # خط منبع/سال آزمون، مثل «(قضاوت - ۱۳۸۰)» — می‌تواند قبل یا بعد
+            # از گزینه‌ها بیاید؛ جزو متن سؤال نیست، تبدیل به هشتگ می‌شود.
+            inner = SOURCE_YEAR_RE.match(stripped).group(1)
+            parts = [p.strip() for p in inner.split("-")]
+            for p in parts:
+                if p:
+                    extra_headers.append("#" + p.replace(" ", "_"))
+            in_question, in_answer = False, False
         elif stripped.startswith("پاسخ:"):
             answer_parts.append(stripped.replace("پاسخ:", "").strip())
             in_question, in_answer = False, True
-        elif any(stripped.startswith(ch) for ch in ["۱)", "۲)", "۳)", "۴)"]):
+        elif any(stripped.startswith(ch) for ch in ["۱)", "۲)", "۳)", "۴)", "الف)", "ب)", "ج)", "د)"]):
             options.append(stripped)
             in_question, in_answer = False, False
         elif in_question and stripped:
@@ -150,11 +161,13 @@ def format_message(question_text, headers):
     answer = highlight_citations(html.escape(" ".join(answer_parts)))
 
     message = ""
-    if headers:
-        message += f"{RLM}│ " + " ".join(order_headers(headers)) + "\n\n"
+    all_headers = list(dict.fromkeys((headers or []) + extra_headers))
+    if all_headers:
+        message += f"{RLM}│ " + " ".join(order_headers(all_headers)) + "\n\n"
 
     message += f"{RLM}│ <b>سوال {question_number}</b>\n"
     message += f"{RLM}<blockquote>{question}</blockquote>\n\n"
+    message += f"{RLM}➖➖➖\n\n"
 
     option_lines = []
     for opt in options:
@@ -170,7 +183,7 @@ def format_message(question_text, headers):
     # فاصله‌ی خالی قبل از متن پاسخ داخل بلاک‌کوت تاشو، تا در حالت بسته
     # هیچ بخشی از پاسخ بیرون نماند و کاربر مجبور شود برای دیدن آن باز کند.
     fold_padding = "\n" * 3
-    short_match = re.match(r"(گزینه\s+[۰-۹\d]+\s+صحیح\s+است\.?)\s*(.*)", answer, re.S)
+    short_match = re.match(r"(گزینه\s+(?:[۰-۹\d]+|الف|ب|ج|د)\s+صحیح\s+است\.?)\s*(.*)", answer, re.S)
     if short_match:
         short_answer, rest_answer = short_match.group(1), short_match.group(2).strip()
         # لایه‌ی اول: پاسخ کوتاه به‌شکل اسپویلر (با یک تپ سریع دیده می‌شود)
