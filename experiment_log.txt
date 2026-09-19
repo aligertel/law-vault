@@ -1,2 +1,8 @@
-QUESTIONS_FILE = test_questions.txt exists: False
-خطا در خواندن/پارس فایل سؤال: FileNotFoundError(2, 'No such file or directory')
+QUESTIONS_FILE = test_questions.txt exists: True
+headers: ['#مدنی', '#دادآفرین', '#سال۱۴۰۴', '#آزمون۱', '#وکالت', '#تست']
+number: ۱
+options count: 2
+variant a ok: True
+variant b ok: True
+variant c ok: True
+variant d ok: True
