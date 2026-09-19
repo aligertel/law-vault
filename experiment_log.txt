@@ -1,7 +1,7 @@
 QUESTIONS_FILE = test_questions.txt exists: True
 headers: ['#مدنی', '#دادآفرین', '#سال۱۴۰۴', '#آزمون۱', '#وکالت', '#تست']
 number: ۱
-options count: 2
+options count: 4
 variant a ok: True
 variant b ok: True
 variant c ok: True
