@@ -3,6 +3,9 @@ name: Send Experiments
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   send:
     runs-on: ubuntu-latest
