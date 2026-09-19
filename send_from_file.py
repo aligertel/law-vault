@@ -122,7 +122,7 @@ def format_message(question_text, headers):
     question_number = ""
     options = []
     answer_parts = []
-    extra_headers = []
+    source_year_line = None
     in_question = False
     in_answer = False
 
@@ -138,12 +138,9 @@ def format_message(question_text, headers):
             in_question, in_answer = True, False
         elif SOURCE_YEAR_RE.match(stripped):
             # خط منبع/سال آزمون، مثل «(قضاوت - ۱۳۸۰)» — می‌تواند قبل یا بعد
-            # از گزینه‌ها بیاید؛ جزو متن سؤال نیست، تبدیل به هشتگ می‌شود.
-            inner = SOURCE_YEAR_RE.match(stripped).group(1)
-            parts = [p.strip() for p in inner.split("-")]
-            for p in parts:
-                if p:
-                    extra_headers.append("#" + p.replace(" ", "_"))
+            # از گزینه‌ها بیاید؛ جزو متن سؤال نیست، همون‌جوری زیر سؤال
+            # داخل پرانتز نمایش داده می‌شود (هشتگ نمی‌شود).
+            source_year_line = stripped
             in_question, in_answer = False, False
         elif stripped.startswith("پاسخ:"):
             answer_parts.append(stripped.replace("پاسخ:", "").strip())
@@ -161,12 +158,13 @@ def format_message(question_text, headers):
     answer = highlight_citations(html.escape(" ".join(answer_parts)))
 
     message = ""
-    all_headers = list(dict.fromkeys((headers or []) + extra_headers))
-    if all_headers:
-        message += f"{RLM}│ " + " ".join(order_headers(all_headers)) + "\n\n"
+    if headers:
+        message += f"{RLM}│ " + " ".join(order_headers(headers)) + "\n\n"
 
     message += f"{RLM}│ <b>سوال {question_number}</b>\n"
     message += f"{RLM}<blockquote>{question}</blockquote>\n\n"
+    if source_year_line:
+        message += f"{RLM}<i>{html.escape(source_year_line)}</i>\n\n"
     message += f"{RLM}➖➖➖\n\n"
 
     option_lines = []
