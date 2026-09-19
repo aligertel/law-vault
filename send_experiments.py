@@ -23,15 +23,42 @@ def highlight_citations(text, wrap="code"):
     return CITATION_RE.sub(r"<code>\1</code>", text)
 
 
+LOG_LINES = []
+
+
+def log(*args):
+    print(*args)
+    LOG_LINES.append(" ".join(str(a) for a in args))
+
+
+def push_debug_log():
+    gh_token = os.environ.get("GITHUB_TOKEN")
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    if not gh_token or not repo:
+        return
+    api = f"https://api.github.com/repos/{repo}/contents/experiment_log.txt"
+    headers = {"Authorization": f"token {gh_token}", "Accept": "application/vnd.github+json"}
+    sha = None
+    r = requests.get(api, headers=headers, timeout=15)
+    if r.ok:
+        sha = r.json().get("sha")
+    import base64
+    content = base64.b64encode("\n".join(LOG_LINES).encode("utf-8")).decode()
+    payload = {"message": "debug: experiment run log", "content": content}
+    if sha:
+        payload["sha"] = sha
+    requests.put(api, headers=headers, json=payload, timeout=15)
+
+
 def send_message(text):
     payload = {"chat_id": CHANNEL_ID, "text": text, "parse_mode": "HTML"}
     try:
         r = requests.post(SEND_URL, json=payload, timeout=30)
         if not r.ok:
-            print("خطا:", r.text)
+            log("خطا:", r.text)
         return r.ok
     except requests.exceptions.RequestException as e:
-        print("خطای شبکه (send_message):", e)
+        log("خطای شبکه (send_message):", e)
         return False
 
 
@@ -52,10 +79,10 @@ def send_quiz_poll(question, options, correct_index):
     try:
         r = requests.post(POLL_URL, json=payload, timeout=30)
         if not r.ok:
-            print("خطا (poll):", r.text)
+            log("خطا (poll):", r.text)
         return r.ok
     except requests.exceptions.RequestException as e:
-        print("خطای شبکه (poll):", e)
+        log("خطای شبکه (poll):", e)
         return False
 
 
@@ -151,36 +178,39 @@ def variant_c_intro(headers):
 
 
 def main():
-    print("QUESTIONS_FILE =", QUESTIONS_FILE, "exists:", os.path.exists(QUESTIONS_FILE))
+    log("QUESTIONS_FILE =", QUESTIONS_FILE, "exists:", os.path.exists(QUESTIONS_FILE))
     try:
         headers, number, question, options, answer = load_one_question(QUESTIONS_FILE)
-        print("headers:", headers)
-        print("number:", number)
-        print("options count:", len(options))
+        log("headers:", headers)
+        log("number:", number)
+        log("options count:", len(options))
     except Exception as e:
-        print("خطا در خواندن/پارس فایل سؤال:", repr(e))
+        log("خطا در خواندن/پارس فایل سؤال:", repr(e))
         return
 
     try:
         send_label("نسخه‌ی الف: جداکننده ➖ + 🔺 + ارجاع با 📎")
-        send_message(variant_a(headers, number, question, options, answer))
+        ok_a = send_message(variant_a(headers, number, question, options, answer))
+        log("variant a ok:", ok_a)
         time.sleep(3)
     except Exception as e:
-        print("خطا در نسخه‌ی الف:", e)
+        log("خطا در نسخه‌ی الف:", e)
 
     try:
         send_label("نسخه‌ی ب: پاسخ سه‌لایه (کوتاه ← راهنما ← استدلال کامل)")
-        send_message(variant_b(headers, number, question, options, answer))
+        ok_b = send_message(variant_b(headers, number, question, options, answer))
+        log("variant b ok:", ok_b)
         time.sleep(3)
     except Exception as e:
-        print("خطا در نسخه‌ی ب:", e)
+        log("خطا در نسخه‌ی ب:", e)
 
     try:
         send_label("نسخه‌ی ج: پست معرفیِ 📂 قبل از شروع یک بخش")
-        send_message(variant_c_intro(headers))
+        ok_c = send_message(variant_c_intro(headers))
+        log("variant c ok:", ok_c)
         time.sleep(3)
     except Exception as e:
-        print("خطا در نسخه‌ی ج:", e)
+        log("خطا در نسخه‌ی ج:", e)
 
     try:
         send_label("نسخه‌ی د: همون سؤال به شکل Quiz Poll واقعی تلگرام")
@@ -190,10 +220,14 @@ def main():
         correct_index = 0
         if correct_num_match:
             correct_index = int(correct_num_match.group(1).translate(persian_to_latin)) - 1
-        send_quiz_poll(f"سوال {number}: {question}", opt_bodies, correct_index)
+        ok_d = send_quiz_poll(f"سوال {number}: {question}", opt_bodies, correct_index)
+        log("variant d ok:", ok_d)
     except Exception as e:
-        print("خطا در نسخه‌ی د:", e)
+        log("خطا در نسخه‌ی د:", e)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    finally:
+        push_debug_log()
