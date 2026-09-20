@@ -17,8 +17,13 @@ CITATION_RE = re.compile(r"(ماده\s+[۰-۹\d]+\s+ق\.[آاٱ]\.د\.[مک]\.?)
 OPTION_RE = re.compile(r"^(۱|۲|۳|۴|الف|ب|ج|د)\)\s*(.*)$", re.S)
 SOURCE_YEAR_RE = re.compile(r"^\(([^)]+)\)$")
 
-# قاعده‌ی تاییدشده: نوع‌آزمون ← موسسه ← سال ← شماره‌آزمون ← درس ← نوع‌محتوا
-EXAM_TYPES = {"وکالت", "ارشد", "دکتری", "قضاوت", "سردفتری"}
+# سلسله‌مراتب توافق‌شده: نوع‌محتوا ← حوزه‌ی حقوقی (درس) ← منبع/مؤلف ← زیربخش
+# اختصاصیِ همون منبع (برای دادآفرین: سال و شماره‌آزمون؛ برای عمروانی و
+# مشابه: فصل کتاب، مثل «کلیات» - این‌ها چون از پیش مشخص نیستن، در انتهای
+# صف (رتبه‌ی پیش‌فرض) قرار می‌گیرن).
+# نوعِ آزمون (وکالت/قضاوت/ارشد/...) دیگه هشتگ نمی‌شه؛ چون محتوای درسی
+# مستقل از بازارِ هدفِ مؤسسه‌ست. اگر جایی همچین تگی باقی مونده باشه، به
+# انتهای صف می‌ره (بدون رتبه‌ی ویژه).
 SOURCES = {"دادآفرین", "چتردانش", "عمروانی", "قربانی"}
 SUBJECTS = {"مدنی", "تجارت", "جزا", "آیین_دادرسی_مدنی"}
 CONTENT_TYPES = {"تست", "تشریحی", "مقاله", "نمودار"}
@@ -27,19 +32,15 @@ EXAM_NUM_RE = re.compile(r"^آزمون[۰-۹\d]+$")
 
 
 def category_rank(tag_name: str) -> int:
-    if tag_name in EXAM_TYPES:
-        return 0
-    if tag_name in SOURCES:
-        return 1
-    if YEAR_RE.match(tag_name):
-        return 2
-    if EXAM_NUM_RE.match(tag_name):
-        return 3
-    if tag_name in SUBJECTS:
-        return 4
     if tag_name in CONTENT_TYPES:
-        return 5
-    return 6
+        return 0
+    if tag_name in SUBJECTS:
+        return 1
+    if tag_name in SOURCES:
+        return 2
+    if YEAR_RE.match(tag_name) or EXAM_NUM_RE.match(tag_name):
+        return 3
+    return 4
 
 
 def order_headers(headers):
