@@ -165,7 +165,7 @@ def format_message(question_text, headers):
     message += f"{RLM}│ <b>سوال {question_number}</b>\n"
     message += f"{RLM}<blockquote>{question}</blockquote>\n\n"
     if source_year_line:
-        message += f"{RLM}<i>{html.escape(source_year_line)}</i>\n\n"
+        message += f"{RLM}<blockquote>{html.escape(source_year_line)}</blockquote>\n\n"
     message += f"{RLM}➖➖➖\n\n"
 
     option_lines = []
