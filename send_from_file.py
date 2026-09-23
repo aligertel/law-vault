@@ -122,14 +122,8 @@ def format_message(question_text, headers):
 
     message = ""
     if headers:
-        # هشتگ درس (بدون رقم، مثل #مدنی) تنها و اول می‌آید؛ هشتگ‌های آزمون/سال
-        # (که رقم دارند، مثل #دادآفرین_۱۲ یا #وکالت_۱۴۰۵) زیرش می‌آیند.
-        subject_headers = [h for h in headers if not DIGIT_RE.search(h)]
-        other_headers = [h for h in headers if DIGIT_RE.search(h)]
-        ordered_headers = subject_headers + other_headers
-        if ordered_headers:
-            message += f"{RLM}│ " + " ".join(ordered_headers) + "\n"
-        message += "\n"
+        # ✅ اصلاح شد: ترتیب ورودی هدرها دقیقاً حفظ می‌شود
+        message += f"{RLM}│ " + " ".join(headers) + "\n\n"
 
     message += f"{RLM}│ <b>سوال {question_number}</b>\n"
     message += f"{RLM}<blockquote>{question}</blockquote>\n\n"
