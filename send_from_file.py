@@ -18,12 +18,6 @@ OPTION_RE = re.compile(r"^(۱|۲|۳|۴|الف|ب|ج|د)\)\s*(.*)$", re.S)
 SOURCE_YEAR_RE = re.compile(r"^\(([^)]+)\)$")
 
 # سلسله‌مراتب توافق‌شده: نوع‌محتوا ← حوزه‌ی حقوقی (درس) ← منبع/مؤلف ← زیربخش
-# اختصاصیِ همون منبع (برای دادآفرین: سال و شماره‌آزمون؛ برای عمروانی و
-# مشابه: فصل کتاب، مثل «کلیات» - این‌ها چون از پیش مشخص نیستن، در انتهای
-# صف (رتبه‌ی پیش‌فرض) قرار می‌گیرن).
-# نوعِ آزمون (وکالت/قضاوت/ارشد/...) دیگه هشتگ نمی‌شه؛ چون محتوای درسی
-# مستقل از بازارِ هدفِ مؤسسه‌ست. اگر جایی همچین تگی باقی مونده باشه، به
-# انتهای صف می‌ره (بدون رتبه‌ی ویژه).
 SOURCES = {"دادآفرین", "چتردانش", "عمروانی", "قربانی"}
 SUBJECTS = {"مدنی", "تجارت", "جزا", "آیین_دادرسی_مدنی", "آیین_دادرسی_کیفری", "حقوق_اساسی"}
 CONTENT_TYPES = {"تست", "تشریحی", "مقاله", "نمودار"}
@@ -87,13 +81,13 @@ def load_questions(filepath):
     active_headers = []
     current_lines = []
     # وقتی True است یعنی اولین خط هشتگ بعدی باید شروع یک دسته‌ی تازه باشد
-    # (نه ادامه‌ی دسته‌ی سوال قبلی) — این پرچم دقیقاً همان چیزی است که باگ
-    # «تجمیع نامحدود هشتگ‌ها روی هم» را رفع می‌کند.
     expect_new_batch = True
 
     def flush():
         if current_lines and any("سوال" in ln for ln in current_lines):
             blocks.append((active_headers[:], "\n".join(current_lines).strip()))
+            # ✅ اصلاح: بعد از هر سوال، هدرهای فعال پاک می‌شوند
+            active_headers.clear()
 
     for line in lines:
         stripped = line.strip()
@@ -138,9 +132,6 @@ def format_message(question_text, headers):
                 question_parts.append(stripped.replace("سوال", "", 1).strip())
             in_question, in_answer = True, False
         elif SOURCE_YEAR_RE.match(stripped):
-            # خط منبع/سال آزمون، مثل «(قضاوت - ۱۳۸۰)» — می‌تواند قبل یا بعد
-            # از گزینه‌ها بیاید؛ جزو متن سؤال نیست، همون‌جوری زیر سؤال
-            # داخل پرانتز نمایش داده می‌شود (هشتگ نمی‌شود).
             source_year_line = stripped
             in_question, in_answer = False, False
         elif stripped.startswith("پاسخ:"):
@@ -152,7 +143,6 @@ def format_message(question_text, headers):
         elif in_question and stripped:
             question_parts.append(stripped)
         elif in_answer and stripped:
-            # خطوط بعدیِ پاسخ چندخطی هم حفظ می‌شوند، نه فقط خط اول
             answer_parts.append(stripped)
 
     question = highlight_citations(html.escape(" ".join(question_parts)))
@@ -179,15 +169,11 @@ def format_message(question_text, headers):
     message += "\n\n".join(option_lines)
     message += "\n\n"
 
-    # فاصله‌ی خالی قبل از متن پاسخ داخل بلاک‌کوت تاشو، تا در حالت بسته
-    # هیچ بخشی از پاسخ بیرون نماند و کاربر مجبور شود برای دیدن آن باز کند.
     fold_padding = "\n" * 3
     short_match = re.match(r"(گزینه\s+(?:[۰-۹\d]+|الف|ب|ج|د)\s+صحیح\s+است\.?)\s*(.*)", answer, re.S)
     if short_match:
         short_answer, rest_answer = short_match.group(1), short_match.group(2).strip()
-        # لایه‌ی اول: پاسخ کوتاه به‌شکل اسپویلر (با یک تپ سریع دیده می‌شود)
         message += f"{RLM}│ <b>پاسخ کوتاه:</b> <span class=\"tg-spoiler\">{short_answer}</span>\n"
-        # لایه‌ی دوم: استدلال کامل داخل بلاک‌کوت تاشو
         message += (
             f"{RLM}<blockquote expandable>{fold_padding}{rest_answer}</blockquote>"
         )
